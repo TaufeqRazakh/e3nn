@@ -19,10 +19,14 @@ def test_submod_tracing() -> None:
     irreps = Irreps("2x0e + 1x1o")
     mod = MyModule(irreps)
 
-    torch._logging.set_logs(bytecode=True, graph=True)
 
     x = irreps.randn(2, -1)
-    print('before: ', x)
-    mod = torch.compile(mod)
-    print('after: ', mod(x))
+    # print('before: ', x)
+    # mod = torch.compile(mod)
+    # print('after: ', mod(x))
     print('\n')
+    explanation = torch._dynamo.explain(mod,x)
+    print(explanation)
+    torch._logging.set_logs(bytecode=True, graph=True)
+    new_mod = torch.compile(mod)
+
