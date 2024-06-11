@@ -8,6 +8,7 @@ import warnings
 
 import numpy as np
 import torch
+import torch._dynamo as dynamo
 
 from e3nn import o3
 from e3nn.util.jit import compile, get_tracing_inputs, get_compile_mode, _MAKE_TRACING_INPUTS
@@ -490,6 +491,32 @@ def assert_normalized(
                 f"Max componentwise error: {max_componentwise:.6f}"
             )
 
+def assert_no_graph_break(
+        func: torch.nn.Module,
+        irreps_in=None,
+        n_input=None
+) -> None:
+    r"""Assert that no graph breaks exist in ``func``
+
+    Parameters
+    ----------
+        func : torch.nn.Module
+            The module to identify for graph breaks
+        irreps_in: object
+            see ``equivariance_error``
+        n_input : int, default 10_000
+            the number of input samples to use for each weight init
+    Returns
+    _______
+        The traced TorchScript function.
+    """
+    # generate input sample
+    args_in = _rand_args(irreps_in, batch_size=n_input)
+    # run func
+    this_outs = dynamo.explain(func,args_in)
+    if this_outs.graph_count != 0:
+        errstr = "Look into user stack to identify where the break occurred in " + func.__name__
+        assert this_outs.graph_count != 0, errstr
 
 def set_random_seeds() -> None:
     """Set the random seeds to try to get some reproducibility"""
