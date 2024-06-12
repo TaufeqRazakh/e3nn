@@ -1,5 +1,6 @@
 import torch
 from e3nn.o3 import Norm, Irreps
+from e3nn.util.test import assert_no_graph_break
 
 def test_submod_tracing() -> None:
     """Check that tracing actually occurs"""
@@ -21,12 +22,10 @@ def test_submod_tracing() -> None:
 
 
     x = irreps.randn(2, -1)
+    assert_no_graph_break(mod)
     # print('before: ', x)
-    # mod = torch.compile(mod)
-    # print('after: ', mod(x))
-    print('\n')
-    explanation = torch._dynamo.explain(mod,x)
-    print(explanation)
-    torch._logging.set_logs(bytecode=True, graph=True)
-    new_mod = torch.compile(mod)
+    # explanation = torch._dynamo.explain(mod,x)
+    # print(explanation)
+    # torch._logging.set_logs(bytecode=True, graph=True)
+    # new_mod = torch.compile(mod)
 
