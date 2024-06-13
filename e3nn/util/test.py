@@ -12,6 +12,7 @@ import torch
 import torch._dynamo as dynamo
 
 from e3nn import o3
+from e3nn.o3 import Irreps
 from e3nn.util.jit import compile, get_tracing_inputs, get_compile_mode, _MAKE_TRACING_INPUTS
 from e3nn.util._argtools import _get_args_in, _get_io_irreps, _transform, _rand_args
 
@@ -522,7 +523,9 @@ def assert_no_graph_break(
     """
     # Compile statement
     torch.compile(model=model, dynamic= dynamic, backend=backend)
-    assert dynamo.graph_break_reasons.__sizeof__() == 0, (repr(model) + " Is resulting in a graph break")
+    irreps = Irreps("2x0e + 1x1o")
+    x = irreps.randn(2, -1)
+    assert dynamo.graph_break_reasons.__len__() == 0, (repr(model) + " Is resulting in a graph break")
 
 def set_random_seeds() -> None:
     """Set the random seeds to try to get some reproducibility"""

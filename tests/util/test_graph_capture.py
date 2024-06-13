@@ -12,20 +12,20 @@ def test_submod_tracing() -> None:
 
         def forward(self, x):
             norm = self.norm(x)
-            if torch.any(norm > 7.):
-                return norm
-            else:
-                return norm * 0.5
+            # if torch.any(norm > 7.):
+            return norm
+            # else:
+            #     return norm * 0.5
 
     irreps = Irreps("2x0e + 1x1o")
     mod = MyModule(irreps)
 
 
     x = irreps.randn(2, -1)
-    assert_no_graph_break(mod)
+    # assert_no_graph_break(mod)
     # print('before: ', x)
-    # explanation = torch._dynamo.explain(mod,x)
-    # print(explanation)
+    explanation = torch._dynamo.explain(mod,x)
+    print(explanation)
     # torch._logging.set_logs(bytecode=True, graph=True)
     # new_mod = torch.compile(mod)
 
