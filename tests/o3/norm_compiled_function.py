@@ -11,4 +11,4 @@ def test_norm_compilations(irreps_in, squared) -> None:
     """Check whether norm compiles without graph breaks"""
 
     mod = o3.Norm(irreps_in, squared=squared)
-    assert_no_graph_break(mod)
+    assert_no_graph_break(mod, torch.randn(mod.irreps_in.dim))

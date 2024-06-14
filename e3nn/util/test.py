@@ -9,11 +9,9 @@ import builtins
 
 import numpy as np
 import torch
-import torch._dynamo as dynamo
 
 from e3nn import o3
-from e3nn.o3 import Irreps
-from e3nn.util.jit import compile, get_tracing_inputs, get_compile_mode, _MAKE_TRACING_INPUTS
+from e3nn.util.jit import compile, get_tracing_inputs, get_compile_mode, _MAKE_TRACING_INPUTS, get_graph_breaks
 from e3nn.util._argtools import _get_args_in, _get_io_irreps, _transform, _rand_args
 
 # pylint: disable=unused-variable
@@ -494,9 +492,8 @@ def assert_normalized(
             )
 
 def assert_no_graph_break(
-    model: Optional[Callable] = None, *,
-    dynamic: Optional[builtins.bool] = None,
-    backend: Union[str, Callable] = "inductor",
+    model: Optional[Callable] = None,
+    *extra_args, **extra_kwargs,
 ) -> None:
     """
     Given a model/function using TorchDynamo and a specified backend, check for graph breaks.
@@ -505,27 +502,17 @@ def assert_no_graph_break(
     ----------
         model: Callable
             Module/function to identify for graph breaks during compilation
-        dynamic: bool or None
-            Use dynamic shape tracing.  When this is True, we will up-front attempt
-            to generate a kernel that is as dynamic as possible to avoid recompilations when
-            sizes change.  This may not always work as some operations/optimizations will
-            force specialization; use TORCH_LOGS=dynamic to debug overspecialization.
-            When this is False, we will NEVER generate dynamic kernels, we will always specialize.
-            By default (None), we automatically detect if dynamism has occurred and compile a more
-            dynamic kernel upon recompile.
-       backend: str or Callable
-        backend to be used
-        - "inductor" is the default backend, which is a good balance between performance and overheadirreps_in: object
+        *extra_args, **extra_kwargs : Any
+            Model inputs
     
     Returns
     _______
         None
     """
-    # Compile statement
-    torch.compile(model=model, dynamic= dynamic, backend=backend)
-    irreps = Irreps("2x0e + 1x1o")
-    x = irreps.randn(2, -1)
-    assert dynamo.graph_break_reasons.__len__() == 0, (repr(model) + " Is resulting in a graph break")
+    graph_count, graph_break_count = get_graph_breaks(model)(*extra_args, **extra_kwargs)
+    assert graph_break_count == 0, (repr(model) + " Is resulting to " +
+                                    str(graph_count) + "graphs, with " +
+                                    str(graph_break_count) + " graph break")
 
 def set_random_seeds() -> None:
     """Set the random seeds to try to get some reproducibility"""

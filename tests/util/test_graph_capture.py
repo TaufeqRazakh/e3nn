@@ -22,10 +22,10 @@ def test_submod_tracing() -> None:
 
 
     x = irreps.randn(2, -1)
-    # assert_no_graph_break(mod)
+    assert_no_graph_break(mod,x)
     # print('before: ', x)
-    explanation = torch._dynamo.explain(mod,x)
-    print(explanation)
+    # explanation = torch._dynamo.explain(mod)(x)
+    # print(explanation)
     # torch._logging.set_logs(bytecode=True, graph=True)
     # new_mod = torch.compile(mod)
 
