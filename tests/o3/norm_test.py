@@ -3,7 +3,7 @@ import pytest
 import torch
 
 from e3nn import o3
-from e3nn.util.test import assert_equivariant, assert_auto_jitable, random_irreps
+from e3nn.util.test import assert_equivariant, assert_auto_jitable, assert_no_graph_break, random_irreps
 
 
 @pytest.mark.parametrize("irreps_in", ["", "5x0e", "1e + 2e + 4x1e + 3x3o"] + random_irreps(n=4))
@@ -15,6 +15,7 @@ def test_norm(irreps_in, squared) -> None:
         return
     assert_equivariant(m)
     assert_auto_jitable(m)
+    assert_no_graph_break(m,torch.randn(m.irreps_in.dim))
 
 
 @pytest.mark.parametrize("squared", [True, False])
