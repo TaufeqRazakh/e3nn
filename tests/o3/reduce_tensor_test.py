@@ -2,7 +2,7 @@ import tempfile
 
 import torch
 from e3nn import o3
-from e3nn.util.test import assert_auto_jitable, assert_equivariant
+from e3nn.util.test import assert_auto_jitable, assert_equivariant, assert_no_graph_break
 
 
 def test_save_load() -> None:
@@ -59,6 +59,12 @@ def test_reduce_tensor_antisymmetric_L2(float_tolerance) -> None:
     assert (Q + torch.einsum("xijk->xjik", Q)).abs().max() < float_tolerance
 
 
+def test_reduce_tensor_antisymmetric_no_graph_break() -> None:
+    tp = o3.ReducedTensorProducts("ijk=-ikj=-jik", i="2e")
+    x = torch.randn(3, 5)
+    assert_no_graph_break(tp, *x)
+
+
 def test_reduce_tensor_elasticity_tensor(float_tolerance) -> None:
     tp = o3.ReducedTensorProducts("ijkl=jikl=klij", i="1e")
     assert tp.irreps_out.dim == 21
@@ -90,3 +96,9 @@ def test_reduce_tensor_elasticity_tensor_parity(float_tolerance) -> None:
     assert (Q - torch.einsum("xijkl->xjikl", Q)).abs().max() < float_tolerance
     assert (Q - torch.einsum("xijkl->xijlk", Q)).abs().max() < float_tolerance
     assert (Q - torch.einsum("xijkl->xklij", Q)).abs().max() < float_tolerance
+
+
+def test_reduce_tensor_elasticity_no_graph_break() -> None:
+    tp = o3.ReducedTensorProducts("ijkl=jikl=klij", i="1o")
+    x = torch.randn(4, 3)
+    assert_no_graph_break(tp,*x)

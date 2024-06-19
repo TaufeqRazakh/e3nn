@@ -5,7 +5,8 @@ from typing import Optional
 import torch
 
 from e3nn import o3
-from e3nn.util.test import assert_equivariant, assert_auto_jitable, random_irreps, assert_normalized
+from e3nn.util.test import (assert_equivariant, assert_auto_jitable,
+                            random_irreps, assert_normalized, assert_no_graph_break)
 
 
 class SlowLinear(torch.nn.Module):
@@ -59,6 +60,13 @@ def test_linear() -> None:
     assert_normalized(m, n_weight=100, n_input=10_000, atol=0.5)
 
 
+def test_linear_no_graph_break() -> None:
+    irreps_in = o3.Irreps("1e + 2e + 3x3o")
+    irreps_out = o3.Irreps("1e + 2e + 3x3o")
+    m = o3.Linear(irreps_in, irreps_out)
+    assert_no_graph_break(m,torch.randn(irreps_in.dim))
+
+
 def test_bias() -> None:
     irreps_in = o3.Irreps("2x0e + 1e + 2x0e + 0o")
     irreps_out = o3.Irreps("3x0e + 1e + 3x0e + 5x0e + 0o")
@@ -77,6 +85,15 @@ def test_bias() -> None:
     assert_equivariant(m)
     assert_auto_jitable(m)
     assert_normalized(m, n_weight=100, n_input=10_000, atol=0.5, weights=[m.weight])
+
+
+def test_bias_no_graph_break() -> None:
+    irreps_in = o3.Irreps("2x0e + 1e + 2x0e + 0o")
+    irreps_out = o3.Irreps("3x0e + 1e + 3x0e + 5x0e + 0o")
+    m = o3.Linear(irreps_in, irreps_out, biases=[True, False, False, True, False])
+    with torch.no_grad():
+        m.bias[:].fill_(1.0)
+    assert_no_graph_break(m, torch.zeros(irreps_in.dim))
 
 
 def test_single_out() -> None:
@@ -195,6 +212,19 @@ def test_weight_view_unshared() -> None:
     assert torch.allclose(out[:, :6], torch.zeros(1))
 
 
+def test_weight_view_unshared_no_graph_break() -> None:
+    m = o3.Linear("4x0e + 3x1o + 2x0e", "2x1o + 8x0e", instructions=[(0, 1), (1, 0)], shared_weights=False)
+    batchdim = 7
+    inp = m.irreps_in.randn(batchdim, -1)
+    weights = torch.randn(batchdim, m.weight_numel)
+    assert m.weight_view_for_instruction(0, weights).shape == (batchdim, 4, 8)
+    assert m.weight_view_for_instruction(1, weights).shape == (batchdim, 3, 2)
+    # Make weights going to output 0 all zeros
+    with torch.no_grad():
+        m.weight_view_for_instruction(1, weights).fill_(0.0)
+    assert_no_graph_break(m,inp, weights)
+
+
 def test_f() -> None:
     m = o3.Linear("0e + 1e + 2e", "0e + 2x1e + 2e", f_in=44, f_out=25, _optimize_einsums=False)
     assert_equivariant(m, args_in=[torch.randn(10, 44, 9)])
@@ -203,3 +233,9 @@ def test_f() -> None:
     assert m.weight_numel == 4
     assert m.weight.numel() == 44 * 25 * 4
     assert 0.7 < y.pow(2).mean() < 1.4
+
+def test_f_no_graph_break() -> None:
+    m = o3.Linear("0e + 1e + 2e", "0e + 2x1e + 2e", f_in=44, f_out=25, _optimize_einsums=False)
+    assert_equivariant(m, args_in=[torch.randn(10, 44, 9)])
+    m = assert_auto_jitable(m)
+    assert_no_graph_break(m,torch.randn(10, 44, 9))
