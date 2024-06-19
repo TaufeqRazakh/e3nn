@@ -3,7 +3,7 @@ import math
 import torch
 from e3nn import o3
 
-from e3nn.util.test import assert_auto_jitable
+from e3nn.util.test import assert_auto_jitable, assert_no_graph_break
 
 
 def test_jit(float_tolerance) -> None:
@@ -50,3 +50,9 @@ def test_sh_same(float_tolerance) -> None:
         y1 = o3.spherical_harmonics(l, x, True)
         y2 = o3.spherical_harmonics_alpha_beta(l, a, b)
         assert (y1 - y2).abs().max() < float_tolerance
+
+def test_sh_has_no_graph_breaks(float_tolerance) -> None:
+    sh = o3.SphericalHarmonicsAlphaBeta([0, 1, 2])
+    a = torch.randn(5, 4)
+    b = torch.randn(5, 4)
+    assert_no_graph_break(sh, a, b)

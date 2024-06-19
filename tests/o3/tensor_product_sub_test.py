@@ -3,7 +3,7 @@ import torch
 from e3nn import o3
 from e3nn.nn import Identity
 from e3nn.o3 import FullyConnectedTensorProduct, FullTensorProduct, Norm, TensorSquare
-from e3nn.util.test import assert_equivariant, assert_auto_jitable
+from e3nn.util.test import assert_equivariant, assert_auto_jitable, assert_no_graph_break
 
 
 def test_fully_connected() -> None:
@@ -101,3 +101,9 @@ def test_square_elasticity_tensor() -> None:
     tp = TensorSquare("1o")
     tp = TensorSquare(tp.irreps_out)
     assert tp.irreps_out.simplify() == o3.Irreps("2x0e + 2x2e + 4e")
+
+def test_square_no_graph_break() -> None:
+    irreps = o3.Irreps("0e + 1e + 2e")
+    tp = TensorSquare(irreps, irrep_normalization="norm")
+    x = irreps.randn(1_000_000, -1, normalization="norm")
+    assert_no_graph_break(tp, x)

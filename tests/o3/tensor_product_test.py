@@ -5,7 +5,7 @@ import tempfile
 import pytest
 import torch
 from e3nn.o3 import TensorProduct, FullyConnectedTensorProduct, Irreps
-from e3nn.util.test import assert_equivariant, assert_auto_jitable, assert_normalized
+from e3nn.util.test import assert_equivariant, assert_auto_jitable, assert_normalized, assert_no_graph_break
 
 
 def make_tp(l1, p1, l2, p2, lo, po, mode, weight, mul: int = 25, path_weights: bool = True, **kwargs):
@@ -291,6 +291,17 @@ def test_optimizations(l1, p1, l2, p2, lo, po, mode, weight, special_code, opt_e
     x1, x2 = x1.to(other_dtype), x2.to(other_dtype)
     opt_tp = opt_tp.to(other_dtype)
     assert opt_tp(x1, x2).dtype == other_dtype
+
+@pytest.mark.parametrize("l1, p1, l2, p2, lo, po, mode, weight", random_params(n=2))
+@pytest.mark.parametrize("special_code", [True, False])
+@pytest.mark.parametrize("opt_ein", [True, False])
+def test_no_graph_break(l1, p1, l2, p2, lo, po, mode, weight, special_code, opt_ein) -> None:
+    """Test for graph breaks when JIT compiling.
+
+    """
+    tp = make_tp(l1, p1, l2, p2, lo, po, mode, weight, _specialized_code=special_code, _optimize_einsums=opt_ein)
+    x = tp.irreps_in1.randn(2, -1)
+    assert_no_graph_break(tp, x)
 
 
 def test_input_weights_python() -> None:

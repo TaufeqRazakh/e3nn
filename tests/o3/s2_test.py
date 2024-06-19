@@ -2,7 +2,7 @@ import torch
 
 import pytest
 from e3nn.o3 import ToS2Grid, FromS2Grid, Irreps
-from e3nn.util.test import assert_equivariant
+from e3nn.util.test import assert_equivariant, assert_no_graph_break
 
 
 @pytest.mark.parametrize("res_a", [11, 12, 13, 14, 15, 16, None])
@@ -55,3 +55,16 @@ def test_equivariance(lmax, res_b, res_a) -> None:
     f.irreps_in = f.irreps_out = Irreps.spherical_harmonics(lmax)
 
     assert_equivariant(f)
+
+@pytest.mark.parametrize("res_a", [100, 101])
+@pytest.mark.parametrize("res_b", [98, 100])
+@pytest.mark.parametrize("lmax", [1, 5])
+def test_no_graph_break(lmax, res_b, res_a) -> None:
+    m = FromS2Grid((res_b, res_a), lmax)
+    k = ToS2Grid(lmax, (res_b, res_a))
+    lmax = m.lmax
+
+    x = torch.randn((lmax + 1) ** 2)
+    assert_no_graph_break(k,x)
+    y = k(x)
+    assert_no_graph_break(m,y)

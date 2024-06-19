@@ -3,7 +3,7 @@ import math
 import pytest
 import torch
 from e3nn import o3
-from e3nn.util.test import assert_auto_jitable, assert_equivariant
+from e3nn.util.test import assert_auto_jitable, assert_equivariant, assert_no_graph_break
 
 
 def test_weird_call() -> None:
@@ -148,5 +148,6 @@ def test_module(normalization, normalize) -> None:
     sp = o3.SphericalHarmonics(l, normalize, normalization)
     sp_jit = assert_auto_jitable(sp)
     xyz = torch.randn(11, 3)
+    assert_no_graph_break(sp, xyz)
     assert torch.allclose(sp_jit(xyz), o3.spherical_harmonics(l, xyz, normalize, normalization))
     assert_equivariant(sp)
