@@ -148,6 +148,13 @@ def test_module(normalization, normalize) -> None:
     sp = o3.SphericalHarmonics(l, normalize, normalization)
     sp_jit = assert_auto_jitable(sp)
     xyz = torch.randn(11, 3)
-    assert_no_graph_break(sp, xyz)
     assert torch.allclose(sp_jit(xyz), o3.spherical_harmonics(l, xyz, normalize, normalization))
     assert_equivariant(sp)
+
+@pytest.mark.parametrize("normalization", ["integral", "component", "norm"])
+@pytest.mark.parametrize("normalize", [True, False])
+def test_module_no_graph_break(normalization, normalize) -> None:
+    l = o3.Irreps("0e + 1o + 3o")
+    sp = o3.SphericalHarmonics(l, normalize, normalization)
+    xyz = torch.randn(11, 3)
+    assert_no_graph_break(sp, xyz)
