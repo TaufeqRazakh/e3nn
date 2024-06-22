@@ -299,9 +299,11 @@ def test_no_graph_break(l1, p1, l2, p2, lo, po, mode, weight, special_code, opt_
     """Test for graph breaks when JIT compiling.
 
     """
-    tp = make_tp(l1, p1, l2, p2, lo, po, mode, weight, _specialized_code=special_code, _optimize_einsums=opt_ein)
-    x = tp.irreps_in1.randn(2, -1)
-    assert_no_graph_break(tp, x)
+    orig_tp = make_tp(l1, p1, l2, p2, lo, po, mode, weight, _specialized_code=special_code, _optimize_einsums=opt_ein)
+    opt_tp = make_tp(l1, p1, l2, p2, lo, po, mode, weight, _specialized_code=special_code, _optimize_einsums=opt_ein)
+    x = orig_tp.irreps_in1.randn(2, -1)
+    y = orig_tp.irreps_in2.randn(2, -1)
+    assert_no_graph_break(opt_tp, *(x,y))
 
 
 def test_input_weights_python() -> None:
